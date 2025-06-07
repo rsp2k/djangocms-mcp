@@ -109,7 +109,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Sites framework
 SITE_ID = 1
 
-# Minimal CMS settings
+# Django CMS v4 settings
+CMS_CONFIRM_VERSION4 = True  # Required for Django CMS v4
 CMS_TEMPLATES = [
     ('template_1.html', 'Template One'),
 ]
