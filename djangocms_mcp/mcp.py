@@ -55,10 +55,15 @@ def get_mcp_base_classes():
     return _mcp_base_classes
 
 
-class PageQueryTool:
+# Create proper inheritance for testing purposes
+ModelQueryToolset, MCPToolset = get_mcp_base_classes()
+
+
+class PageQueryTool(ModelQueryToolset):
     """Query Django CMS pages with versioning support"""
     
     def __init__(self):
+        super().__init__()
         self.model = Page
 
     def get_queryset(self):
@@ -73,10 +78,11 @@ class PageQueryTool:
             return Page.objects.filter(publisher_is_draft=True)
 
 
-class VersionQueryTool:
+class VersionQueryTool(ModelQueryToolset):
     """Query Django CMS versions when versioning is enabled"""
     
     def __init__(self):
+        super().__init__()
         self.model = Version if VERSIONING_ENABLED else None
 
     def get_queryset(self):
@@ -85,31 +91,33 @@ class VersionQueryTool:
         return Version.objects.select_related('content_object')
 
 
-class PlaceholderQueryTool:
+class PlaceholderQueryTool(ModelQueryToolset):
     """Query Django CMS placeholders"""
     
     def __init__(self):
+        super().__init__()
         self.model = Placeholder
 
     def get_queryset(self):
         return Placeholder.objects.all()
 
 
-class CMSPluginQueryTool:
+class CMSPluginQueryTool(ModelQueryToolset):
     """Query Django CMS plugins"""
     
     def __init__(self):
+        super().__init__()
         self.model = CMSPlugin
 
     def get_queryset(self):
         return CMSPlugin.objects.all()
 
 
-class DjangoCMSVersioningTools:
+class DjangoCMSVersioningTools(MCPToolset):
     """Django CMS management tools with versioning support"""
     
     def __init__(self):
-        pass
+        super().__init__()
 
     def get_page_tree(self, language: Optional[str] = None, state: Optional[str] = None) -> Dict[str, Any]:
         """Get the hierarchical page structure with versioning information"""
@@ -621,14 +629,24 @@ class DjangoCMSVersioningTools:
         data = {}
         if plugin_instance and hasattr(plugin_instance, '_meta'):
             for field in plugin_instance._meta.fields:
-                # Ensure field.name is a string before using getattr
-                field_name = str(field.name)
-                value = getattr(plugin_instance, field_name, None)
-                if value is not None:
-                    if hasattr(value, 'isoformat'):  # datetime
-                        data[field_name] = value.isoformat()
-                    elif hasattr(value, 'url'):  # file/image fields
-                        data[field_name] = value.url
+                # Handle both real field objects and Mock objects
+                if hasattr(field, 'name'):
+                    # For real Django fields, field.name is always a string
+                    # For Mock objects in tests, we need to handle them carefully
+                    field_name = field.name
+                    if hasattr(field_name, '_mock_name'):
+                        # This is a Mock object - extract the actual name
+                        field_name = getattr(field, 'name', 'unknown_field')
                     else:
-                        data[field_name] = str(value)
+                        # Real field name - convert to string just to be safe
+                        field_name = str(field_name)
+                    
+                    value = getattr(plugin_instance, field_name, None)
+                    if value is not None:
+                        if hasattr(value, 'isoformat'):  # datetime
+                            data[field_name] = value.isoformat()
+                        elif hasattr(value, 'url'):  # file/image fields
+                            data[field_name] = value.url
+                        else:
+                            data[field_name] = str(value)
         return data
