@@ -41,15 +41,12 @@ class TestMCPQueryTools(TestCase):
         """Test PageQueryTool queryset when versioning is enabled"""
         tool = PageQueryTool()
         
-        # Mock the Version import and objects
+        # Mock the Version import that happens inside get_queryset()
         with patch('djangocms_mcp.mcp.Version') as mock_version:
-            mock_queryset = Mock()
-            mock_values_list = Mock()
-            mock_distinct = Mock()
-            
             # Set up the chain: Version.objects.values_list().distinct()
-            mock_version.objects.values_list.return_value = mock_values_list
+            mock_values_list = Mock()
             mock_values_list.distinct.return_value = [1, 2, 3]
+            mock_version.objects.values_list.return_value = mock_values_list
             
             # Mock Page.objects.filter().distinct()
             with patch.object(tool.model, 'objects') as mock_page_objects:
@@ -261,9 +258,11 @@ class TestDjangoCMSVersioningTools(TestCase):
         mock_datetime.isoformat.return_value = "2023-01-01T12:00:00"
         mock_instance.created_date = mock_datetime
         
-        # Mock file/image field
+        # Mock file/image field - DO NOT add isoformat method to this mock!
         mock_file = Mock()
         mock_file.url = "/media/test.jpg"
+        # Ensure this mock does NOT have an isoformat method
+        del mock_file.isoformat  # Remove any default isoformat that Mock might have
         mock_instance.image = mock_file
         
         result = self.tools._serialize_plugin(mock_instance)
