@@ -57,7 +57,7 @@ jobs:
           
       - name: Set Python path for package
         run: |
-          echo "PYTHONPATH=${{ github.workspace }}/djangocms-mcp:${{ github.workspace }}:$PYTHONPATH" >> $GITHUB_ENV
+          echo "PYTHONPATH=${{ github.workspace }}/djangocms_mcp:${{ github.workspace }}:$PYTHONPATH" >> $GITHUB_ENV
 
       - name: Run tests
         run: |
