@@ -14,6 +14,7 @@ jobs:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
         django-version: ["4.2", "5.0"]
+        django-cms-version: ["4.0", "4.1"]
 
     steps:
       - uses: actions/checkout@v4
@@ -32,8 +33,9 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ hashFiles('**/pyproject.toml') }}
+          key: ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ matrix.django-cms-version }}-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
+            ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.django-version }}-${{ matrix.django-cms-version }}-
             ${{ runner.os }}-pip-${{ matrix.python-version }}-${{ matrix.django-version }}-
             ${{ runner.os }}-pip-${{ matrix.python-version }}-
             ${{ runner.os }}-pip-
@@ -42,10 +44,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install "Django~=${{ matrix.django-version }}.0"
-          # Install core dependencies
-          pip install django-cms>=4.0.0
+          # Install Django CMS v4
+          pip install "django-cms~=${{ matrix.django-cms-version }}.0"
+          pip install "djangocms-admin-style>=3.0.0"
+          # Install other required dependencies
           pip install Pillow  # Required for media handling
           pip install dj-database-url  # For database URL parsing
+          pip install django-mcp-server>=0.1.0
           # Install test framework and coverage
           pip install pytest pytest-django pytest-cov
           
@@ -65,6 +70,50 @@ jobs:
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
+
+  # Test with optional versioning
+  test-with-versioning:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+        django-version: ["4.2", "5.0"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gettext
+
+      - name: Install dependencies with versioning
+        run: |
+          python -m pip install --upgrade pip
+          pip install "Django~=${{ matrix.django-version }}.0"
+          # Install Django CMS v4 with versioning
+          pip install "django-cms>=4.0.0,<5.0"
+          pip install "djangocms-admin-style>=3.0.0"
+          pip install "djangocms-versioning>=2.0.0"
+          # Install other dependencies
+          pip install Pillow dj-database-url django-mcp-server>=0.1.0
+          pip install pytest pytest-django pytest-cov
+          
+      - name: Set environment variables
+        run: |
+          echo "PYTHONPATH=${{ github.workspace }}/djangocms_mcp:${{ github.workspace }}:$PYTHONPATH" >> $GITHUB_ENV
+          echo "DJANGO_SETTINGS_MODULE=tests.settings" >> $GITHUB_ENV
+          echo "TEST_WITH_VERSIONING=true" >> $GITHUB_ENV
+
+      - name: Run tests with versioning
+        run: |
+          python -m pytest tests/ -v --tb=short -m "not slow" --cov=djangocms_mcp --cov-report=xml --cov-report=term-missing
 
   # Test package building
   test-build:
