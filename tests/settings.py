@@ -9,7 +9,16 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Add the package directory to Python path so we can import it
-sys.path.insert(0, str(BASE_DIR / 'djangocms-mcp'))
+# Handle both "djangocms-mcp" and "djangocms_mcp" directory names
+possible_paths = [
+    BASE_DIR / 'djangocms-mcp',
+    BASE_DIR / 'djangocms_mcp',
+]
+
+for path in possible_paths:
+    if path.exists():
+        sys.path.insert(0, str(path))
+        break
 
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = 'django-insecure-test-key-only-for-testing'
@@ -26,7 +35,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.sites',
     
-    # CMS
+    # CMS dependencies
     'cms',
     'menus',
     'treebeard',
@@ -34,7 +43,7 @@ INSTALLED_APPS = [
     'filer',
     'easy_thumbnails',
     
-    # MCP
+    # MCP - try both possible app names
     'djangocms_mcp',
 ]
 
@@ -133,7 +142,7 @@ CMS_CACHE_DURATIONS = {
 # Easy thumbnails
 THUMBNAIL_PROCESSORS = [
     'easy_thumbnails.processors.colorspace',
-    'easy_thumbnails.processors.autocrop',
+    'easy_thumbnails.processors.autocrop', 
     'easy_thumbnails.processors.scale_and_crop',
     'easy_thumbnails.processors.filters',
 ]
@@ -167,3 +176,19 @@ if 'test' in os.environ.get('DJANGO_SETTINGS_MODULE', '') or 'pytest' in sys.mod
             'handlers': ['null'],
         },
     }
+    
+    # Skip some CMS dependencies if not available
+    try:
+        import djangocms_text_ckeditor
+    except ImportError:
+        INSTALLED_APPS = [app for app in INSTALLED_APPS if app != 'djangocms_text_ckeditor']
+    
+    try:
+        import filer
+    except ImportError:
+        INSTALLED_APPS = [app for app in INSTALLED_APPS if app != 'filer']
+        
+    try:
+        import easy_thumbnails
+    except ImportError:
+        INSTALLED_APPS = [app for app in INSTALLED_APPS if app != 'easy_thumbnails']
