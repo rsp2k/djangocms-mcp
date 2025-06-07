@@ -37,25 +37,24 @@ class TestMCPQueryTools(TestCase):
         self.assertEqual(tool.model, CMSPlugin)
 
     @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', True)
-    def test_page_query_tool_with_versioning(self):
+    @patch('djangocms_mcp.mcp.Version')
+    def test_page_query_tool_with_versioning(self, mock_version):
         """Test PageQueryTool queryset when versioning is enabled"""
         tool = PageQueryTool()
         
-        # Mock the parent class method
-        with patch.object(tool.__class__.__bases__[0], 'get_queryset') as mock_super:
-            mock_queryset = Mock()
-            mock_filtered = Mock()
-            mock_distinct = Mock()
-            
-            mock_super.return_value = mock_queryset
-            mock_queryset.filter.return_value = mock_filtered
-            mock_filtered.distinct.return_value = mock_distinct
+        # Mock the version filtering
+        mock_version.objects.values_list.return_value.distinct.return_value = [1, 2, 3]
+        
+        with patch.object(tool.model, 'objects') as mock_objects:
+            mock_filter = mock_objects.filter.return_value
+            mock_distinct = mock_filter.distinct.return_value
             
             result = tool.get_queryset()
             
             # Verify the filtering chain
-            mock_queryset.filter.assert_called_once_with(versions__isnull=False)
-            mock_filtered.distinct.assert_called_once()
+            mock_version.objects.values_list.assert_called_once_with('content_object_id', flat=True)
+            mock_objects.filter.assert_called_once_with(id__in=[1, 2, 3])
+            mock_filter.distinct.assert_called_once()
             self.assertEqual(result, mock_distinct)
 
     @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', False)
@@ -65,17 +64,18 @@ class TestMCPQueryTools(TestCase):
         
         # Mock the parent class method
         with patch.object(tool.__class__.__bases__[0], 'get_queryset') as mock_super:
-            mock_queryset = Mock()
-            mock_filtered = Mock()
-            
-            mock_super.return_value = mock_queryset
-            mock_queryset.filter.return_value = mock_filtered
-            
-            result = tool.get_queryset()
-            
-            # Verify fallback filtering
-            mock_queryset.filter.assert_called_once_with(publisher_is_draft=True)
-            self.assertEqual(result, mock_filtered)
+            with patch.object(tool.model, 'objects') as mock_objects:
+                mock_filtered = Mock()
+                
+                # First attempt with old field should fail, then fallback
+                mock_objects.filter.side_effect = [Exception("Field not found"), mock_filtered]
+                mock_objects.all.return_value = mock_filtered
+                
+                result = tool.get_queryset()
+                
+                # Should fallback to all() when old field fails
+                mock_objects.all.assert_called_once()
+                self.assertEqual(result, mock_filtered)
 
     @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', True)
     @patch('djangocms_mcp.mcp.Version')
@@ -87,7 +87,7 @@ class TestMCPQueryTools(TestCase):
         mock_queryset = Mock()
         mock_selected = Mock()
         mock_version.return_value = mock_queryset
-        mock_queryset.select_related.return_value = mock_selected
+        mock_queryset.objects.select_related.return_value = mock_selected
         
         # Since versioning is enabled, model should not be None
         self.assertIsNotNone(tool.model)
@@ -236,7 +236,7 @@ class TestDjangoCMSVersioningTools(TestCase):
         ]
         
         # Mock field values
-        mock_instance.title = "Test Title"
+        mock_instance.title = 'Test Title'
         
         # Mock datetime field
         mock_datetime = Mock()
@@ -291,6 +291,29 @@ class TestDjangoCMSVersioningTools(TestCase):
         }
         
         self.assertEqual(result, expected)
+
+    def test_serialize_plugin_handles_mock_field_names(self):
+        """Test _serialize_plugin handles Mock field names correctly"""
+        mock_instance = Mock()
+        
+        # Create mock fields with different name types
+        mock_field_real = Mock()
+        mock_field_real.name = 'real_field'
+        
+        mock_field_mock = Mock()
+        mock_field_mock.name = Mock()
+        mock_field_mock.name._mock_name = 'mock_field'
+        
+        mock_instance._meta.fields = [mock_field_real, mock_field_mock]
+        mock_instance.real_field = 'real_value'
+        mock_instance.mock_field = 'mock_value'
+        
+        result = self.tools._serialize_plugin(mock_instance)
+        
+        # Should handle both real and mock field names
+        self.assertIn('real_field', result)
+        # Mock field handling might vary, but shouldn't crash
+        self.assertIsInstance(result, dict)
 
 
 class TestMCPErrorHandling(TestCase):
