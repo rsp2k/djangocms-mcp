@@ -87,11 +87,11 @@ Issues = "https://github.com/rsp2k/django-cms-mcp/issues"
 Changelog = "https://github.com/rsp2k/django-cms-mcp/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["djangocms-mcp"]
+packages = ["djangocms_mcp"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "/djangocms-mcp",
+    "/djangocms_mcp",
     "/README.md",
     "/LICENSE",
     "/pyproject.toml",
@@ -164,7 +164,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["djangocms-mcp"]
+source = ["djangocms_mcp"]
 omit = [
     "*/migrations/*",
     "*/tests/*",
