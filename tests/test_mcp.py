@@ -37,45 +37,56 @@ class TestMCPQueryTools(TestCase):
         self.assertEqual(tool.model, CMSPlugin)
 
     @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', True)
-    @patch('djangocms_mcp.mcp.Version')
-    def test_page_query_tool_with_versioning(self, mock_version):
+    def test_page_query_tool_with_versioning(self):
         """Test PageQueryTool queryset when versioning is enabled"""
         tool = PageQueryTool()
         
-        # Mock the version filtering
-        mock_version.objects.values_list.return_value.distinct.return_value = [1, 2, 3]
-        
-        with patch.object(tool.model, 'objects') as mock_objects:
-            mock_filter = mock_objects.filter.return_value
-            mock_distinct = mock_filter.distinct.return_value
+        # Mock the Version import and objects
+        with patch('djangocms_mcp.mcp.Version') as mock_version:
+            mock_queryset = Mock()
+            mock_values_list = Mock()
+            mock_distinct = Mock()
             
-            result = tool.get_queryset()
+            # Set up the chain: Version.objects.values_list().distinct()
+            mock_version.objects.values_list.return_value = mock_values_list
+            mock_values_list.distinct.return_value = [1, 2, 3]
             
-            # Verify the filtering chain
-            mock_version.objects.values_list.assert_called_once_with('content_object_id', flat=True)
-            mock_objects.filter.assert_called_once_with(id__in=[1, 2, 3])
-            mock_filter.distinct.assert_called_once()
-            self.assertEqual(result, mock_distinct)
+            # Mock Page.objects.filter().distinct()
+            with patch.object(tool.model, 'objects') as mock_page_objects:
+                mock_filter = Mock()
+                mock_result = Mock()
+                mock_page_objects.filter.return_value = mock_filter
+                mock_filter.distinct.return_value = mock_result
+                
+                result = tool.get_queryset()
+                
+                # Verify the Version query chain
+                mock_version.objects.values_list.assert_called_once_with('content_object_id', flat=True)
+                mock_values_list.distinct.assert_called_once()
+                
+                # Verify the Page filtering 
+                mock_page_objects.filter.assert_called_once_with(id__in=[1, 2, 3])
+                mock_filter.distinct.assert_called_once()
+                
+                self.assertEqual(result, mock_result)
 
     @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', False)
     def test_page_query_tool_without_versioning(self):
         """Test PageQueryTool queryset when versioning is disabled"""
         tool = PageQueryTool()
         
-        # Mock the parent class method
-        with patch.object(tool.__class__.__bases__[0], 'get_queryset') as mock_super:
-            with patch.object(tool.model, 'objects') as mock_objects:
-                mock_filtered = Mock()
-                
-                # First attempt with old field should fail, then fallback
-                mock_objects.filter.side_effect = [Exception("Field not found"), mock_filtered]
-                mock_objects.all.return_value = mock_filtered
-                
-                result = tool.get_queryset()
-                
-                # Should fallback to all() when old field fails
-                mock_objects.all.assert_called_once()
-                self.assertEqual(result, mock_filtered)
+        with patch.object(tool.model, 'objects') as mock_objects:
+            mock_filtered = Mock()
+            
+            # First attempt with old field should fail, then fallback
+            mock_objects.filter.side_effect = [Exception("Field not found"), mock_filtered]
+            mock_objects.all.return_value = mock_filtered
+            
+            result = tool.get_queryset()
+            
+            # Should fallback to all() when old field fails
+            mock_objects.all.assert_called_once()
+            self.assertEqual(result, mock_filtered)
 
     @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', True)
     @patch('djangocms_mcp.mcp.Version')
@@ -229,11 +240,18 @@ class TestDjangoCMSVersioningTools(TestCase):
         """Test _serialize_plugin method"""
         # Create a mock plugin instance
         mock_instance = Mock()
-        mock_instance._meta.fields = [
-            Mock(name='title'),
-            Mock(name='created_date'),
-            Mock(name='image')
-        ]
+        
+        # Create mock fields with string names
+        mock_field1 = Mock()
+        mock_field1.name = 'title'  # String field name
+        
+        mock_field2 = Mock() 
+        mock_field2.name = 'created_date'  # String field name
+        
+        mock_field3 = Mock()
+        mock_field3.name = 'image'  # String field name
+        
+        mock_instance._meta.fields = [mock_field1, mock_field2, mock_field3]
         
         # Mock field values
         mock_instance.title = 'Test Title'
@@ -261,9 +279,11 @@ class TestDjangoCMSVersioningTools(TestCase):
     def test_serialize_plugin_handles_none_values(self):
         """Test _serialize_plugin handles None values gracefully"""
         mock_instance = Mock()
-        mock_instance._meta.fields = [
-            Mock(name='optional_field')
-        ]
+        
+        # Create a mock field with string name
+        mock_field = Mock()
+        mock_field.name = 'optional_field'  # String field name
+        mock_instance._meta.fields = [mock_field]
         
         mock_instance.optional_field = None
         
@@ -275,10 +295,15 @@ class TestDjangoCMSVersioningTools(TestCase):
     def test_serialize_plugin_handles_string_conversion(self):
         """Test _serialize_plugin converts non-special values to strings"""
         mock_instance = Mock()
-        mock_instance._meta.fields = [
-            Mock(name='number_field'),
-            Mock(name='boolean_field')
-        ]
+        
+        # Create mock fields with string names
+        mock_field1 = Mock()
+        mock_field1.name = 'number_field'  # String field name
+        
+        mock_field2 = Mock() 
+        mock_field2.name = 'boolean_field'  # String field name
+        
+        mock_instance._meta.fields = [mock_field1, mock_field2]
         
         mock_instance.number_field = 42
         mock_instance.boolean_field = True
@@ -298,7 +323,7 @@ class TestDjangoCMSVersioningTools(TestCase):
         
         # Create mock fields with different name types
         mock_field_real = Mock()
-        mock_field_real.name = 'real_field'
+        mock_field_real.name = 'real_field'  # String field name
         
         mock_field_mock = Mock()
         mock_field_mock.name = Mock()
