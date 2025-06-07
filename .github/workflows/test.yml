@@ -46,17 +46,25 @@ jobs:
           pip install django-cms>=4.0.0
           pip install Pillow  # Required for media handling
           pip install dj-database-url  # For database URL parsing
-          # Install test framework
-          pip install pytest pytest-django
+          # Install test framework and coverage
+          pip install pytest pytest-django pytest-cov
           
       - name: Set environment variables
         run: |
           echo "PYTHONPATH=${{ github.workspace }}/djangocms_mcp:${{ github.workspace }}:$PYTHONPATH" >> $GITHUB_ENV
           echo "DJANGO_SETTINGS_MODULE=tests.settings" >> $GITHUB_ENV
 
-      - name: Run tests
+      - name: Run unit tests
         run: |
-          python -m pytest tests/ -v --tb=short
+          python -m pytest tests/ -v --tb=short --cov=djangocms_mcp --cov-report=xml --cov-report=term-missing
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: false
 
   # Test package building
   test-build:
