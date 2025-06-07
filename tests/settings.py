@@ -9,7 +9,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Add the package directory to Python path
-package_path = BASE_DIR / 'djangocms-mcp'
+package_path = BASE_DIR / 'djangocms_mcp'
 if package_path.exists():
     sys.path.insert(0, str(package_path))
 
