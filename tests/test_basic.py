@@ -28,8 +28,8 @@ class TestBasicSetup(TestCase):
         """Test that the package files exist"""
         current_dir = os.path.dirname(os.path.dirname(__file__))
         
-        # Check for package directory
-        package_dir = os.path.join(current_dir, 'djangocms-mcp')
+        # Check for package directory (updated to use underscores)
+        package_dir = os.path.join(current_dir, 'djangocms_mcp')
         self.assertTrue(os.path.exists(package_dir), f"Package directory should exist at {package_dir}")
         
         # Check for essential files
@@ -70,7 +70,7 @@ class TestImports(TestCase):
         try:
             # Add the package to the path
             current_dir = os.path.dirname(os.path.dirname(__file__))
-            package_dir = os.path.join(current_dir, 'djangocms-mcp')
+            package_dir = os.path.join(current_dir, 'djangocms_mcp')
             
             if package_dir not in sys.path:
                 sys.path.insert(0, package_dir)
@@ -82,3 +82,33 @@ class TestImports(TestCase):
         except ImportError as e:
             # Don't fail the entire test suite for this
             self.skipTest(f"Package import test skipped: {e}")
+
+
+class TestAppStructure(TestCase):
+    """Test the application structure"""
+    
+    def test_app_structure(self):
+        """Test that the app has the expected structure"""
+        import os
+        
+        current_dir = os.path.dirname(os.path.dirname(__file__))
+        
+        # Check for the correct directory structure (using underscores)
+        package_dir = os.path.join(current_dir, 'djangocms_mcp')
+        self.assertTrue(os.path.exists(package_dir), "Package directory should exist")
+        
+        # Check for key files
+        expected_files = ['__init__.py', 'apps.py', 'models.py', 'cms_plugins.py', 'mcp.py']
+        for expected_file in expected_files:
+            file_path = os.path.join(package_dir, expected_file)
+            self.assertTrue(
+                os.path.exists(file_path), 
+                f"{expected_file} should exist in djangocms_mcp package"
+            )
+        
+        # Check for templates directory
+        templates_dir = os.path.join(package_dir, 'templates', 'djangocms_mcp')
+        self.assertTrue(
+            os.path.exists(templates_dir), 
+            "Template directory should exist"
+        )
