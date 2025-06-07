@@ -55,9 +55,10 @@ jobs:
           # Install test framework
           pip install pytest pytest-django
           
-      - name: Set Python path for package
+      - name: Set environment variables
         run: |
           echo "PYTHONPATH=${{ github.workspace }}/djangocms_mcp:${{ github.workspace }}:$PYTHONPATH" >> $GITHUB_ENV
+          echo "DJANGO_SETTINGS_MODULE=tests.settings" >> $GITHUB_ENV
 
       - name: Run tests
         run: |
