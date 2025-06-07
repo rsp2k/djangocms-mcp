@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "django-cms-mcp"
 version = "1.0.0"
-description = "Django CMS plugin providing Model Context Protocol (MCP) server functionality for LLM assistant integration"
+description = "Django CMS v4 plugin providing Model Context Protocol (MCP) server functionality for LLM assistant integration"
 readme = "README.md"
 license = {file = "LICENSE"}
 authors = [
@@ -14,6 +14,7 @@ authors = [
 keywords = [
     "django",
     "django-cms",
+    "django-cms-v4",
     "mcp",
     "model-context-protocol",
     "ai",
@@ -25,10 +26,9 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Web Environment",
     "Framework :: Django",
-    "Framework :: Django :: 4.0",
-    "Framework :: Django :: 4.1",
     "Framework :: Django :: 4.2",
     "Framework :: Django :: 5.0",
+    "Framework :: Django :: 5.1",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
@@ -45,9 +45,10 @@ classifiers = [
 ]
 requires-python = ">=3.10"
 dependencies = [
-    "Django>=4.0.0",
-    "django-cms>=4.0.0",
+    "Django>=4.2,<6.0",
+    "django-cms>=4.0.0,<5.0",
     "django-mcp-server>=0.1.0",
+    "djangocms-admin-style>=3.0.0",
 ]
 
 [project.optional-dependencies]
@@ -71,6 +72,9 @@ test = [
     "django-filer>=3.0.0",
     "easy-thumbnails>=2.7.0",
     "djangocms-text-ckeditor>=5.0.0",
+]
+versioning = [
+    "djangocms-versioning>=2.0.0",
 ]
 docs = [
     "sphinx>=6.0.0",
@@ -122,8 +126,9 @@ profile = "black"
 multi_line_output = 3
 line_length = 88
 known_django = "django"
+known_djangocms = "cms,menus,treebeard,djangocms_admin_style"
 known_first_party = "djangocms_mcp"
-sections = ["FUTURE", "STDLIB", "THIRDPARTY", "DJANGO", "FIRSTPARTY", "LOCALFOLDER"]
+sections = ["FUTURE", "STDLIB", "THIRDPARTY", "DJANGO", "DJANGOCMS", "FIRSTPARTY", "LOCALFOLDER"]
 skip_glob = ["*/migrations/*"]
 
 [tool.mypy]
@@ -141,7 +146,11 @@ strict_optional = true
 [[tool.mypy.overrides]]
 module = [
     "cms.*",
+    "menus.*",
+    "treebeard.*",
     "django_mcp_server.*",
+    "djangocms_versioning.*",
+    "djangocms_admin_style.*",
 ]
 ignore_missing_imports = true
 
@@ -216,4 +225,4 @@ ignore = [
 
 [tool.ruff.isort]
 known-first-party = ["djangocms_mcp"]
-known-third-party = ["django", "cms"]
+known-third-party = ["django", "cms", "menus", "treebeard"]
