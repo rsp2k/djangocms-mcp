@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load i18n %}
+
+{% block main_content %}
+    <div class="mcp-server-plugin">
+        <div class="mcp-server-status">
+            <h3>{{ instance.title }}</h3>
+            {% if instance.description %}
+                <p>{{ instance.description }}</p>
+            {% endif %}
+
+            {% if instance.enabled %}
+                <div class="alert alert-success">
+                    <strong>{% trans "MCP Server Active" %}</strong>
+                    <p>{% trans "The MCP server is running and available for connections." %}</p>
+                    <p><strong>{% trans "Endpoint:" %}</strong> <code>{% url 'mcp_server_streamable_http_endpoint"' %}</code></p>
+                </div>
+
+                <div class="mcp-functions">
+                    <h4>{% trans "Available Functions:" %}</h4>
+                    <ul>
+                        <li><code>get_page_tree</code> - {% trans "Get hierarchical page structure" %}</li>
+                        <li><code>get_page</code> - {% trans "Retrieve full page content" %}</li>
+                        <li><code>create_page</code> - {% trans "Create new pages" %}</li>
+                        <li><code>list_templates</code> - {% trans "List available templates" %}</li>
+                        <li><code>list_plugin_types</code> - {% trans "Get available plugin types" %}</li>
+                        <li><code>create_plugin</code> - {% trans "Add plugins to placeholders" %}</li>
+                        <li><code>update_plugin</code> - {% trans "Update existing plugins" %}</li>
+                        <li><code>publish_page</code> - {% trans "Publish pages" %}</li>
+                        <li><code>search_pages</code> - {% trans "Search for pages" %}</li>
+                        <li><code>get_languages</code> - {% trans "Get configured languages" %}</li>
+                    </ul>
+                </div>
+            {% else %}
+                <div class="alert alert-warning">
+                    <strong>{% trans "MCP Server Disabled" %}</strong>
+                    <p>{% trans "The MCP server is currently disabled." %}</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock main_content %}
+
+{% block extra_head %}
+    <style>
+        .mcp-server-plugin {
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .mcp-server-status .alert {
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            color: #3c763d;
+            background-color: #dff0d8;
+            border-color: #d6e9c6;
+        }
+
+        .alert-warning {
+            color: #8a6d3b;
+            background-color: #fcf8e3;
+            border-color: #faebcc;
+        }
+
+        .mcp-functions ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .mcp-functions li {
+            margin: 5px 0;
+            padding: 5px;
+            background-color: #f8f9fa;
+            border-radius: 3px;
+        }
+
+        .mcp-functions code {
+            background-color: #e9ecef;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+{% endblock extra_head %}
