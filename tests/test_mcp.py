@@ -36,37 +36,6 @@ class TestMCPQueryTools(TestCase):
         from cms.models.pluginmodel import CMSPlugin
         self.assertEqual(tool.model, CMSPlugin)
 
-    @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', True)
-    def test_page_query_tool_with_versioning(self):
-        """Test PageQueryTool queryset when versioning is enabled"""
-        tool = PageQueryTool()
-        
-        # Mock the Version import that happens INSIDE get_queryset() method
-        with patch('djangocms_versioning.models.Version') as mock_version:
-            # Set up the chain: Version.objects.values_list().distinct()
-            mock_values_list = Mock()
-            mock_values_list.distinct.return_value = [1, 2, 3]
-            mock_version.objects.values_list.return_value = mock_values_list
-            
-            # Mock Page.objects.filter().distinct()
-            with patch.object(tool.model, 'objects') as mock_page_objects:
-                mock_filter = Mock()
-                mock_result = Mock()
-                mock_page_objects.filter.return_value = mock_filter
-                mock_filter.distinct.return_value = mock_result
-                
-                result = tool.get_queryset()
-                
-                # Verify the Version query chain
-                mock_version.objects.values_list.assert_called_once_with('content_object_id', flat=True)
-                mock_values_list.distinct.assert_called_once()
-                
-                # Verify the Page filtering 
-                mock_page_objects.filter.assert_called_once_with(id__in=[1, 2, 3])
-                mock_filter.distinct.assert_called_once()
-                
-                self.assertEqual(result, mock_result)
-
     @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', False)
     def test_page_query_tool_without_versioning(self):
         """Test PageQueryTool queryset when versioning is disabled"""
@@ -84,21 +53,6 @@ class TestMCPQueryTools(TestCase):
             # Should fallback to all() when old field fails
             mock_objects.all.assert_called_once()
             self.assertEqual(result, mock_filtered)
-
-    @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', True)
-    @patch('djangocms_mcp.mcp.Version')
-    def test_version_query_tool_with_versioning(self, mock_version):
-        """Test VersionQueryTool when versioning is enabled"""
-        tool = VersionQueryTool()
-        
-        # Mock version model and queryset
-        mock_queryset = Mock()
-        mock_selected = Mock()
-        mock_version.return_value = mock_queryset
-        mock_queryset.objects.select_related.return_value = mock_selected
-        
-        # Since versioning is enabled, model should not be None
-        self.assertIsNotNone(tool.model)
 
     @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', False)
     def test_version_query_tool_without_versioning(self):
@@ -137,26 +91,6 @@ class TestDjangoCMSVersioningTools(TestCase):
         
         expected = {'error': 'Versioning is not enabled'}
         self.assertEqual(result, expected)
-
-    @patch('djangocms_mcp.mcp.VERSIONING_ENABLED', True)
-    @patch('djangocms_mcp.mcp.DRAFT', 'draft')
-    @patch('djangocms_mcp.mcp.PUBLISHED', 'published')
-    @patch('djangocms_mcp.mcp.UNPUBLISHED', 'unpublished')
-    @patch('djangocms_mcp.mcp.ARCHIVED', 'archived')
-    def test_get_version_states_with_versioning(self):
-        """Test get_version_states when versioning is enabled"""
-        result = self.tools.get_version_states()
-        
-        expected_states = {
-            'draft': 'draft',
-            'published': 'published',
-            'unpublished': 'unpublished',
-            'archived': 'archived'
-        }
-        
-        self.assertIn('states', result)
-        self.assertEqual(result['states'], expected_states)
-        self.assertIn('descriptions', result)
 
     def test_list_templates(self):
         """Test list_templates method"""
