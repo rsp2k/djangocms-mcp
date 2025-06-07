@@ -59,90 +59,57 @@ class PageQueryTool:
     """Query Django CMS pages with versioning support"""
     
     def __init__(self):
-        ModelQueryToolset, _ = get_mcp_base_classes()
-        # Create a proper subclass instead of modifying __bases__
-        class PageQueryToolImpl(ModelQueryToolset):
-            model = Page
-            
-            def get_queryset(self):
-                """Filter pages based on versioning status"""
-                if VERSIONING_ENABLED:
-                    # Get pages that have versions (versioned content)
-                    return Page.objects.filter(
-                        versions__isnull=False
-                    ).distinct()
-                else:
-                    # Fallback to standard Django CMS behavior
-                    return Page.objects.filter(publisher_is_draft=True)
-        
-        self._impl = PageQueryToolImpl()
         self.model = Page
 
     def get_queryset(self):
-        return self._impl.get_queryset()
+        """Filter pages based on versioning status"""
+        if VERSIONING_ENABLED:
+            # Get pages that have versions (versioned content)
+            return Page.objects.filter(
+                versions__isnull=False
+            ).distinct()
+        else:
+            # Fallback to standard Django CMS behavior
+            return Page.objects.filter(publisher_is_draft=True)
 
 
 class VersionQueryTool:
     """Query Django CMS versions when versioning is enabled"""
     
     def __init__(self):
-        ModelQueryToolset, _ = get_mcp_base_classes()
-        # Create a proper subclass instead of modifying __bases__
-        if VERSIONING_ENABLED:
-            class VersionQueryToolImpl(ModelQueryToolset):
-                model = Version
-                
-                def get_queryset(self):
-                    return Version.objects.select_related('content_object')
-            
-            self._impl = VersionQueryToolImpl()
-            self.model = Version
-        else:
-            self._impl = None
-            self.model = None
+        self.model = Version if VERSIONING_ENABLED else None
 
     def get_queryset(self):
-        if not VERSIONING_ENABLED or self._impl is None:
+        if not VERSIONING_ENABLED:
             return None
-        return self._impl.get_queryset()
+        return Version.objects.select_related('content_object')
 
 
 class PlaceholderQueryTool:
     """Query Django CMS placeholders"""
     
     def __init__(self):
-        ModelQueryToolset, _ = get_mcp_base_classes()
-        # Create a proper subclass instead of modifying __bases__
-        class PlaceholderQueryToolImpl(ModelQueryToolset):
-            model = Placeholder
-        
-        self._impl = PlaceholderQueryToolImpl()
         self.model = Placeholder
+
+    def get_queryset(self):
+        return Placeholder.objects.all()
 
 
 class CMSPluginQueryTool:
     """Query Django CMS plugins"""
     
     def __init__(self):
-        ModelQueryToolset, _ = get_mcp_base_classes()
-        # Create a proper subclass instead of modifying __bases__
-        class CMSPluginQueryToolImpl(ModelQueryToolset):
-            model = CMSPlugin
-        
-        self._impl = CMSPluginQueryToolImpl()
         self.model = CMSPlugin
+
+    def get_queryset(self):
+        return CMSPlugin.objects.all()
 
 
 class DjangoCMSVersioningTools:
     """Django CMS management tools with versioning support"""
     
     def __init__(self):
-        _, MCPToolset = get_mcp_base_classes()
-        # Create a proper subclass instead of modifying __bases__
-        class DjangoCMSVersioningToolsImpl(MCPToolset):
-            pass
-        
-        self._impl = DjangoCMSVersioningToolsImpl()
+        pass
 
     def get_page_tree(self, language: Optional[str] = None, state: Optional[str] = None) -> Dict[str, Any]:
         """Get the hierarchical page structure with versioning information"""
@@ -652,13 +619,16 @@ class DjangoCMSVersioningTools:
     def _serialize_plugin(self, plugin_instance):
         """Serialize plugin instance data"""
         data = {}
-        for field in plugin_instance._meta.fields:
-            value = getattr(plugin_instance, field.name, None)
-            if value is not None:
-                if hasattr(value, 'isoformat'):  # datetime
-                    data[field.name] = value.isoformat()
-                elif hasattr(value, 'url'):  # file/image fields
-                    data[field.name] = value.url
-                else:
-                    data[field.name] = str(value)
+        if plugin_instance and hasattr(plugin_instance, '_meta'):
+            for field in plugin_instance._meta.fields:
+                # Ensure field.name is a string before using getattr
+                field_name = str(field.name)
+                value = getattr(plugin_instance, field_name, None)
+                if value is not None:
+                    if hasattr(value, 'isoformat'):  # datetime
+                        data[field_name] = value.isoformat()
+                    elif hasattr(value, 'url'):  # file/image fields
+                        data[field_name] = value.url
+                    else:
+                        data[field_name] = str(value)
         return data
