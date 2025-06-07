@@ -11,8 +11,15 @@ class MCPServerCMSPlugin(CMSPluginBase):
     cache = False
 
     def render(self, context, instance, placeholder):
-        context.update({
+        # Ensure context is a dictionary
+        if context is None:
+            context = {}
+        
+        # Create a copy to avoid modifying the original context
+        render_context = context.copy() if context else {}
+        
+        render_context.update({
             'instance': instance,
-            'mcp_enabled': instance.enabled,
+            'mcp_enabled': getattr(instance, 'enabled', True),  # Default to True if enabled field doesn't exist
         })
-        return context
+        return render_context
