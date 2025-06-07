@@ -46,7 +46,7 @@ classifiers = [
 requires-python = ">=3.10"
 dependencies = [
     "Django>=4.2,<6.0",
-    "django-cms>=4.0.0,<5.0",
+    "django-cms>=4.1.0,<5.0",
     "django-mcp-server>=0.1.0",
     "djangocms-admin-style>=3.0.0",
 ]
