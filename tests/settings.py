@@ -37,6 +37,13 @@ INSTALLED_APPS = [
     'djangocms_mcp',
 ]
 
+# Conditionally add djangocms_versioning if available
+try:
+    import djangocms_versioning
+    INSTALLED_APPS.append('djangocms_versioning')
+except ImportError:
+    pass
+
 # Minimal middleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
