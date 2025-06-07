@@ -18,12 +18,15 @@ SECRET_KEY = 'django-insecure-test-key-only-for-testing'
 DEBUG = True
 ALLOWED_HOSTS = ['*']
 
-# Minimal app list for testing
+# Complete app list for Django CMS testing
 INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django.contrib.admin',  # Added for LogEntry model
+    'django.contrib.messages',  # Required by Django CMS
+    'django.contrib.staticfiles',  # Often needed by CMS
     
     # CMS core (minimal)
     'cms',
@@ -41,6 +44,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',  # Added for messages
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'cms.middleware.user.CurrentUserMiddleware',
     'cms.middleware.page.CurrentPageMiddleware',
@@ -61,6 +65,7 @@ TEMPLATES = [
                 'django.template.context_processors.debug',
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',  # Added for messages
                 'cms.context_processors.cms_settings',
             ],
         },
