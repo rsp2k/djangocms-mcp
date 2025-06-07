@@ -2,10 +2,14 @@
 Django settings for testing djangocms-mcp
 """
 import os
+import sys
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Add the package directory to Python path so we can import it
+sys.path.insert(0, str(BASE_DIR / 'djangocms-mcp'))
 
 # Quick-start development settings - unsuitable for production
 SECRET_KEY = 'django-insecure-test-key-only-for-testing'
@@ -73,14 +77,18 @@ TEMPLATES = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / 'tests' / 'db.sqlite3',
     }
 }
 
 # Use PostgreSQL if DATABASE_URL is provided (for CI)
 if 'DATABASE_URL' in os.environ:
-    import dj_database_url
-    DATABASES['default'] = dj_database_url.parse(os.environ['DATABASE_URL'])
+    try:
+        import dj_database_url
+        DATABASES['default'] = dj_database_url.parse(os.environ['DATABASE_URL'])
+    except ImportError:
+        # Fall back to sqlite if dj_database_url is not available
+        pass
 
 # Internationalization
 LANGUAGE_CODE = 'en'
@@ -131,7 +139,7 @@ THUMBNAIL_PROCESSORS = [
 ]
 
 # Test settings
-if 'test' in os.environ.get('DJANGO_SETTINGS_MODULE', ''):
+if 'test' in os.environ.get('DJANGO_SETTINGS_MODULE', '') or 'pytest' in sys.modules:
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': ':memory:',
@@ -145,3 +153,17 @@ if 'test' in os.environ.get('DJANGO_SETTINGS_MODULE', ''):
             return None
     
     MIGRATION_MODULES = DisableMigrations()
+    
+    # Simplify logging for tests
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'null': {
+                'class': 'logging.NullHandler',
+            },
+        },
+        'root': {
+            'handlers': ['null'],
+        },
+    }
