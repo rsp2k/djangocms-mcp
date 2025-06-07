@@ -61,6 +61,7 @@ dev = [
     "flake8>=6.0.0",
     "mypy>=1.0.0",
     "pre-commit>=3.0.0",
+    "ruff>=0.0.250",
 ]
 test = [
     "pytest>=7.0.0",
@@ -68,6 +69,9 @@ test = [
     "pytest-cov>=4.0.0",
     "factory-boy>=3.2.0",
     "freezegun>=1.2.0",
+    "django-filer>=3.0.0",
+    "easy-thumbnails>=2.7.0",
+    "djangocms-text-ckeditor>=5.0.0",
 ]
 docs = [
     "sphinx>=6.0.0",
@@ -83,14 +87,16 @@ Issues = "https://github.com/rsp2k/django-cms-mcp/issues"
 Changelog = "https://github.com/rsp2k/django-cms-mcp/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["django_cms_mcp"]
+packages = ["djangocms-mcp"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "/django_cms_mcp",
+    "/djangocms-mcp",
     "/README.md",
     "/LICENSE",
     "/pyproject.toml",
+    "/tests",
+    "/pytest.ini",
 ]
 
 [tool.black]
@@ -117,7 +123,7 @@ profile = "black"
 multi_line_output = 3
 line_length = 88
 known_django = "django"
-known_first_party = "django_cms_mcp"
+known_first_party = "djangocms_mcp"
 sections = ["FUTURE", "STDLIB", "THIRDPARTY", "DJANGO", "FIRSTPARTY", "LOCALFOLDER"]
 skip_glob = ["*/migrations/*"]
 
@@ -147,10 +153,8 @@ addopts = [
     "--strict-markers",
     "--strict-config",
     "--verbose",
-    "--cov=django_cms_mcp",
-    "--cov-report=term-missing",
-    "--cov-report=html",
-    "--cov-report=xml",
+    "--tb=short",
+    "--reuse-db",
 ]
 testpaths = ["tests"]
 markers = [
@@ -160,7 +164,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["django_cms_mcp"]
+source = ["djangocms-mcp"]
 omit = [
     "*/migrations/*",
     "*/tests/*",
@@ -229,7 +233,7 @@ ignore = [
 "*/migrations/*" = ["E501"]
 
 [tool.ruff.isort]
-known-first-party = ["django_cms_mcp"]
+known-first-party = ["djangocms_mcp"]
 known-third-party = ["django", "cms"]
 
 [tool.pre-commit]
