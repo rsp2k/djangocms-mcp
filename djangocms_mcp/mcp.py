@@ -1,6 +1,5 @@
 import logging
-
-from mcp_server import ModelQueryToolset, MCPToolset
+from typing import Dict, Any, List, Optional
 
 from cms.models import Page, Placeholder
 from cms.api import create_page
@@ -9,7 +8,6 @@ from cms.models.pluginmodel import CMSPlugin
 from cms.utils.placeholder import get_placeholder_conf
 from cms.utils.conf import get_cms_setting, get_languages
 from django.conf import settings
-from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -26,40 +24,84 @@ except ImportError as e:
     DRAFT = PUBLISHED = UNPUBLISHED = ARCHIVED = None
 
 
-class PageQueryTool(ModelQueryToolset):
+def _get_mcp_base_classes():
+    """Lazy import of MCP base classes to avoid circular imports"""
+    try:
+        from mcp_server import ModelQueryToolset, MCPToolset
+        return ModelQueryToolset, MCPToolset
+    except ImportError:
+        # Create mock base classes if mcp_server is not available
+        class MockModelQueryToolset:
+            model = None
+            def get_queryset(self):
+                if hasattr(self.model, 'objects'):
+                    return self.model.objects.all()
+                return None
+        
+        class MockMCPToolset:
+            pass
+        
+        return MockModelQueryToolset, MockMCPToolset
+
+
+class PageQueryTool:
     """Query Django CMS pages with versioning support"""
-    model = Page
+    
+    def __init__(self):
+        ModelQueryToolset, _ = _get_mcp_base_classes()
+        self.__class__.__bases__ = (ModelQueryToolset,)
+        self.model = Page
 
     def get_queryset(self):
         """Filter pages based on versioning status"""
         if VERSIONING_ENABLED:
             # Get pages that have versions (versioned content)
-            return super().get_queryset().filter(
+            return Page.objects.filter(
                 versions__isnull=False
             ).distinct()
         else:
             # Fallback to standard Django CMS behavior
-            return super().get_queryset().filter(publisher_is_draft=True)
+            return Page.objects.filter(publisher_is_draft=True)
 
-class VersionQueryTool(ModelQueryToolset):
+
+class VersionQueryTool:
     """Query Django CMS versions when versioning is enabled"""
-    model = Version if VERSIONING_ENABLED else None
+    
+    def __init__(self):
+        ModelQueryToolset, _ = _get_mcp_base_classes()
+        self.__class__.__bases__ = (ModelQueryToolset,)
+        self.model = Version if VERSIONING_ENABLED else None
 
     def get_queryset(self):
         if not VERSIONING_ENABLED:
             return None
-        return super().get_queryset().select_related('content_object')
+        return Version.objects.select_related('content_object')
 
-class PlaceholderQueryTool(ModelQueryToolset):
+
+class PlaceholderQueryTool:
     """Query Django CMS placeholders"""
-    model = Placeholder
+    
+    def __init__(self):
+        ModelQueryToolset, _ = _get_mcp_base_classes()
+        self.__class__.__bases__ = (ModelQueryToolset,)
+        self.model = Placeholder
 
-class CMSPluginQueryTool(ModelQueryToolset):
+
+class CMSPluginQueryTool:
     """Query Django CMS plugins"""
-    model = CMSPlugin
+    
+    def __init__(self):
+        ModelQueryToolset, _ = _get_mcp_base_classes()
+        self.__class__.__bases__ = (ModelQueryToolset,)
+        self.model = CMSPlugin
 
-class DjangoCMSVersioningTools(MCPToolset):
+
+class DjangoCMSVersioningTools:
     """Django CMS management tools with versioning support"""
+    
+    def __init__(self):
+        _, MCPToolset = _get_mcp_base_classes()
+        self.__class__.__bases__ = (MCPToolset,)
 
     def get_page_tree(self, language: Optional[str] = None, state: Optional[str] = None) -> Dict[str, Any]:
         """Get the hierarchical page structure with versioning information"""
