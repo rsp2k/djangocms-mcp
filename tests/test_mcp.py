@@ -41,8 +41,8 @@ class TestMCPQueryTools(TestCase):
         """Test PageQueryTool queryset when versioning is enabled"""
         tool = PageQueryTool()
         
-        # Mock the Version import that happens inside get_queryset()
-        with patch('djangocms_mcp.mcp.Version') as mock_version:
+        # Mock the Version import that happens INSIDE get_queryset() method
+        with patch('djangocms_versioning.models.Version') as mock_version:
             # Set up the chain: Version.objects.values_list().distinct()
             mock_values_list = Mock()
             mock_values_list.distinct.return_value = [1, 2, 3]
