@@ -58,7 +58,7 @@ jobs:
     - name: Run security checks
       run: |
         bandit -r djangocms_mcp/
-        safety check
+        safety scan
 
   build:
     needs: [test, security-check]
