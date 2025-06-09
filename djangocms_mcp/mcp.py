@@ -1,6 +1,8 @@
 import logging
 from typing import Dict, Any, List, Optional
 
+from mcp_server import ModelQueryToolset, MCPToolset
+
 from cms.models import Page, Placeholder
 from cms.api import create_page
 from cms.plugin_pool import plugin_pool
@@ -9,7 +11,6 @@ from cms.utils.placeholder import get_placeholder_conf
 from cms.utils.conf import get_cms_setting, get_languages
 from django.conf import settings
 
-from mcp_server import ModelQueryToolset, MCPToolset
 
 logger = logging.getLogger(__name__)
 
