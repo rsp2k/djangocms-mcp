@@ -9,6 +9,8 @@ from cms.utils.placeholder import get_placeholder_conf
 from cms.utils.conf import get_cms_setting, get_languages
 from django.conf import settings
 
+from mcp_server import ModelQueryToolset, MCPToolset
+
 logger = logging.getLogger(__name__)
 
 # Import djangocms-versioning models and utilities
@@ -23,40 +25,6 @@ except ImportError as e:
     Version = None
     DRAFT = PUBLISHED = UNPUBLISHED = ARCHIVED = None
 
-
-def _get_mcp_base_classes():
-    """Lazy import of MCP base classes to avoid circular imports"""
-    try:
-        from mcp_server import ModelQueryToolset, MCPToolset
-        return ModelQueryToolset, MCPToolset
-    except ImportError:
-        # Create mock base classes if mcp_server is not available
-        class MockModelQueryToolset:
-            model = None
-            def get_queryset(self):
-                if hasattr(self.model, 'objects'):
-                    return self.model.objects.all()
-                return None
-        
-        class MockMCPToolset:
-            pass
-        
-        return MockModelQueryToolset, MockMCPToolset
-
-
-# Base classes for MCP tools - initialized lazily
-_mcp_base_classes = None
-
-def get_mcp_base_classes():
-    """Get the MCP base classes, initializing them once"""
-    global _mcp_base_classes
-    if _mcp_base_classes is None:
-        _mcp_base_classes = _get_mcp_base_classes()
-    return _mcp_base_classes
-
-
-# Create proper inheritance for testing purposes
-ModelQueryToolset, MCPToolset = get_mcp_base_classes()
 
 
 class PageQueryTool(ModelQueryToolset):
@@ -569,12 +537,9 @@ class DjangoCMSVersioningTools(MCPToolset):
                 pages = Page.objects.all()
 
             if state:
-                try:
-                    # Filter by version state
-                    versioned_page_ids_with_state = Version.objects.filter(state=state).values_list('content_object_id', flat=True).distinct()
-                    pages = pages.filter(id__in=versioned_page_ids_with_state)
-                except Exception:
-                    pass
+                # Filter by version state
+                versioned_page_ids_with_state = Version.objects.filter(state=state).values_list('content_object_id', flat=True).distinct()
+                pages = pages.filter(id__in=versioned_page_ids_with_state)
 
             # Search in titles
             title_matches = pages.filter(
@@ -585,25 +550,22 @@ class DjangoCMSVersioningTools(MCPToolset):
             results = []
             for page in title_matches:
                 # Get the version info
-                try:
-                    version_qs = Version.objects.filter(content_object=page)
-                    if state:
-                        version_qs = version_qs.filter(state=state)
+                version_qs = Version.objects.filter(content_object=page)
+                if state:
+                    version_qs = version_qs.filter(state=state)
 
-                    latest_version = version_qs.order_by('-pk').first()
-                    if latest_version:
-                        results.append({
-                            'id': page.pk,
-                            'title': page.get_title(language=language),
-                            'slug': page.get_slug(language=language),
-                            'url': page.get_absolute_url(language=language) if latest_version.state == PUBLISHED else None,
-                            'version_id': latest_version.pk,
-                            'version_state': latest_version.state,
-                            'is_published': latest_version.state == PUBLISHED,
-                        })
-                except Exception:
-                    # Skip pages that have version issues
-                    continue
+                latest_version = version_qs.order_by('-pk').first()
+                if latest_version:
+                    results.append({
+                        'id': page.pk,
+                        'title': page.get_title(language=language),
+                        'slug': page.get_slug(language=language),
+                        'url': page.get_absolute_url(language=language) if latest_version.state == PUBLISHED else None,
+                        'version_id': latest_version.pk,
+                        'version_state': latest_version.state,
+                        'is_published': latest_version.state == PUBLISHED,
+                    })
+
         else:
             # Fallback to standard Django CMS
             try:
